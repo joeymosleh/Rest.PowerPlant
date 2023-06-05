@@ -1,23 +1,22 @@
 ﻿using Newtonsoft.Json;
+using Serilog;
 using System.Net;
 
 namespace Rest.PowerPlant.Middleware;
 
 public class ExceptionHandlerMiddleware
 {
-    private Serilog.ILogger _logger;
+    private static readonly Serilog.ILogger _logger = Log.ForContext<ExceptionHandlerMiddleware>();
     private readonly RequestDelegate _next;
 
-    public ExceptionHandlerMiddleware(RequestDelegate next, Serilog.ILogger logger)
+    public ExceptionHandlerMiddleware(RequestDelegate next)
     {
         _next = next;
-        _logger = logger;
     }
 
 
     public async Task InvokeAsync(HttpContext httpContext)
     {
-
         try
         {
             await _next(httpContext);
@@ -28,7 +27,6 @@ public class ExceptionHandlerMiddleware
         }
 
     }
-
 
     private Task HandleExceptionAsync(HttpContext context, Exception exception)
     {

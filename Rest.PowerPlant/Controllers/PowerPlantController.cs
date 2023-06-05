@@ -10,7 +10,7 @@ namespace Rest.PowerPlant.Controllers;
 [Route("productionplan")]
 public class PowerPlantController : ControllerBase
 {
-    public PowerPlantController(ILogger<PowerPlantController> logger, IPowerPlantService powerPlantService)
+    public PowerPlantController(IPowerPlantService powerPlantService)
     {
         PowerPlantService = powerPlantService ?? throw new ArgumentNullException(nameof(powerPlantService));
     }

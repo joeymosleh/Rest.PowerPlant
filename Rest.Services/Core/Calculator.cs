@@ -7,7 +7,7 @@ public class Calculator
     public static List<ProductionPlanResponse> Calculate(ProductionPlanRequest request)
     {
 
-        var sortedPowerPlants = PowerPlantsSortByCost(request.PowerPlants, request.Fuels);
+        var sortedPowerPlants = PowerPlantsSortByCostAndPMin(request.PowerPlants, request.Fuels);
 
         var bestCombination = Combination.FindBestCombination(sortedPowerPlants, request.Load);
 
@@ -15,7 +15,7 @@ public class Calculator
 
     }
 
-    private static List<PowerPlant> PowerPlantsSortByCost(List<PowerPlant> powerPlants, Fuel fuels)
+    private static List<PowerPlant> PowerPlantsSortByCostAndPMin(List<PowerPlant> powerPlants, Fuel fuels)
     {
         foreach (var powerPlant in powerPlants)
         {
@@ -36,7 +36,7 @@ public class Calculator
             }
         }
 
-        return powerPlants.OrderBy(pp => pp.Cost).ToList();
+        return powerPlants.OrderBy(pp => pp.Cost).ThenBy(pp=>pp.PMin).ToList();
     }
 
 
