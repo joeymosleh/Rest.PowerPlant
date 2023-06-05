@@ -5,78 +5,72 @@ namespace Rest.Services.Core;
 
 public static class Combination
 {
-    public static Dictionary<string, int> FindBestCombination(List<PowerPlant> powerPlants, int load)
+    public static List<ProductionPlanResponse> FindBestCombination(List<PowerPlant> powerPlants, int load)
     {
-        var validCombinations = new List<Dictionary<string, int>>();
-        var bestCost = double.MaxValue;
-        var remainingLoad = load;
-
-        // Recursive function to find the best combination
-        FindCombination(0, new Dictionary<string, int>(), powerPlants, remainingLoad, validCombinations, ref bestCost);
-
-
-        var bestCombination = validCombinations.OrderBy(d => d.Count).FirstOrDefault();
-
-
-        if (bestCombination != null && bestCombination.Values.Sum() == load)
-            return bestCombination;
-        else
-            return new Dictionary<string, int>();
+        var memo = new Dictionary<string, List<ProductionPlanResponse>>();
+        var bestCombination = FindCombination(0, powerPlants, load, memo);
+        return bestCombination ?? new List<ProductionPlanResponse>();
     }
 
-
-
-    private static void FindCombination(int index, Dictionary<string, int> combination, List<PowerPlant> powerPlants, int remainingLoad, List<Dictionary<string, int>> validCombinations, ref double bestCost)
+    private static List<ProductionPlanResponse> FindCombination(int index, List<PowerPlant> powerPlants, int remainingLoad, Dictionary<string, List<ProductionPlanResponse>> memo)
     {
         if (remainingLoad == 0)
         {
-            var currentCost = CalculateCombinationCost(combination, powerPlants);
-            if (currentCost < bestCost)
-            {
-                bestCost = currentCost;
-                validCombinations.Clear();
-            }
-            if (currentCost == bestCost)
-            {
-                validCombinations.Add(new Dictionary<string, int>(combination));
-            }
-            return;
+            return new List<ProductionPlanResponse>();
         }
 
         if (index >= powerPlants.Count || remainingLoad < 0)
         {
-            return;
+            return null;
+        }
+
+        var memoKey = $"{index}:{remainingLoad}";
+        if (memo.ContainsKey(memoKey))
+        {
+            return memo[memoKey];
         }
 
         var powerPlant = powerPlants[index];
         var pmin = powerPlant.PMin;
         var pmax = powerPlant.PMax;
 
+        List<ProductionPlanResponse> bestCombination = null;
+        double bestCost = double.MaxValue;
+
         for (int power = pmax; power >= pmin; power--)
         {
             if (power <= remainingLoad)
             {
-                combination[powerPlant.Name] = power;
-                remainingLoad -= power;
+                var remainingCombination = FindCombination(index + 1, powerPlants, remainingLoad - power, memo);
+                if (remainingCombination != null)
+                {
+                    var currentCombination = new List<ProductionPlanResponse>(remainingCombination)
+                {
+                    new ProductionPlanResponse { name = powerPlant.Name, Production = power }
+                };
+                    var currentCost = CalculateCombinationCost(currentCombination, powerPlants);
 
-                FindCombination(index + 1, combination, powerPlants, remainingLoad, validCombinations, ref bestCost);
-
-                combination.Remove(powerPlant.Name);
-                remainingLoad += power;
+                    if (currentCost < bestCost)
+                    {
+                        bestCost = currentCost;
+                        bestCombination = currentCombination;
+                    }
+                }
             }
         }
 
-        FindCombination(index + 1, combination, powerPlants, remainingLoad, validCombinations, ref bestCost);
+        memo[memoKey] = bestCombination;
+        return bestCombination;
     }
 
-    private static double CalculateCombinationCost(Dictionary<string, int> combination, List<PowerPlant> powerPlants)
+    private static double CalculateCombinationCost(List<ProductionPlanResponse> combination, List<PowerPlant> powerPlants)
     {
         double cost = 0;
-        foreach (var kvp in combination)
+        foreach (var response in combination)
         {
-            var powerPlant = powerPlants.Find(p => p.Name == kvp.Key);
+            var powerPlant = powerPlants.Find(p => p.Name == response.name);
             if (powerPlant == null) continue;
-            cost += powerPlant.Cost * kvp.Value;
+            cost += powerPlant.Cost * (double)response.Production;
         }
         return cost;
     }

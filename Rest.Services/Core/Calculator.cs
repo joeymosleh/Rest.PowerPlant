@@ -11,12 +11,7 @@ public class Calculator
 
         var bestCombination = Combination.FindBestCombination(sortedPowerPlants, request.Load);
 
-        var response = new List<ProductionPlanResponse>();
-
-        foreach (var entry in bestCombination)
-            response.Add(new ProductionPlanResponse { name = entry.Key, Production = entry.Value });
-
-        return response;
+        return bestCombination.Where(x=>x.Production != 0).ToList();
 
     }
 
